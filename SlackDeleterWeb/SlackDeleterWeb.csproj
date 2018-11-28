@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <UserSecretsId>1385714c-4e66-4edf-b25f-70c9ede67d72</UserSecretsId>
     <Major Condition=" '$(Major)' == '' ">1</Major>
-    <Minor Condition=" '$(Minor)' == '' ">1</Minor>
+    <Minor Condition=" '$(Minor)' == '' ">2</Minor>
     <Patch Condition=" '$(Patch)' == '' ">0</Patch>
     <VersionPrefix>$(Major).$(Minor).$(Patch)</VersionPrefix>
   </PropertyGroup>

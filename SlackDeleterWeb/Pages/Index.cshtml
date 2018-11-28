@@ -1,0 +1,201 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<h4 class="center">Automatically delete old files from Slack</h4>
+
+
+<div class="row">
+    <div class="input-field col offset-s1 s6">
+        <input id="slack_token" type="text" class="validate" data-bind="value: slackToken">
+        <label for="slack_token">Slack Token</label>
+    </div>
+    <div class="input-field col s3">
+        <input id="days_to_delete" type="number" value="30" class="validate" data-bind="value: daysToDelete">
+        <label for="days_to_delete">Number of Days</label>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col offset-s3 s3">
+        <button class="waves-effect waves-light btn" data-bind="click: performSearch"><i class="material-icons left">search</i>Search</button>
+    </div>
+    <div class="col s3">
+        <button class="waves-effect waves-light btn red" data-bind="click: deleteAll, enable: files().length > 0"><i class="material-icons left">delete</i>Delete All</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col s12">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Timestamp</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: files">
+                <tr>
+                    <td data-bind="text: name"></td>
+                    <td data-bind="text: formattedTimestamp"></td>
+                    <td data-bind="text: type"></td>
+                    <td data-bind="text: formattedSize"></td>
+                    <td><a class="waves-effect waves-light btn" data-bind="attr: {href: link}"><i class="material-icons">link</i></a></td>
+                    <td><button class="waves-effect waves-light btn red" data-bind="click: $root.deleteFile"><i class="material-icons">delete</i></button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="delete-confirm-modal" class="modal">
+    <div class="modal-content">
+        <h4>Confirmation</h4>
+        <p>Are you sure you want to delete <strong data-bind="text: selectedFile() ? selectedFile().name : 'unknown'"></strong>?</p>
+    </div>
+    <div class="modal-footer">
+        <button href="#!" class="modal-close waves-effect waves-green btn-flat" data-bind="click: confirmDelete">Yes</button>
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">No</a>
+    </div>
+</div>
+
+<div id="delete-all-confirm-modal" class="modal">
+    <div class="modal-content">
+        <h4>Confirmation</h4>
+        <p>Are you sure you want to delete <strong>ALL</strong> files older than <i data-bind="text: daysToDelete"></i> days?</p>
+    </div>
+    <div class="modal-footer">
+        <button href="#!" class="modal-close waves-effect waves-green btn-flat" data-bind="click: confirmDeleteAll">Yes</button>
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">No</a>
+    </div>
+</div>
+
+<div id="error-modal" class="modal">
+    <div class="modal-header red">
+        <p class="white-text" style="margin-left: 8px; margin-top: 0px; padding-top: 8px; padding-bottom: 8px;">Error</p>
+    </div>
+    <div class="modal-content">
+        <p data-bind="text: errorText"></p>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat red white-text">OK</a>
+    </div>
+</div>
+
+<div id="delete-all-progress" class="modal">
+    <div class="modal-content">
+        <h4>Deleting All Files</h4>
+        <p>Deleting <i data-bind="text: files().length"></i> files</p>
+    </div>
+    <div class="progress col s4 offset-s4">
+        <div class="determinate" data-bind="attr: {style: progress}"></div>
+    </div>
+    <div class="modal-footer">
+        <button class="modal-close waves-effect waves-green btn-flat" data-bind="enable: files().length == 0">OK</button>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            $('#delete-confirm-modal').modal();
+            $('#delete-all-confirm-modal').modal();
+            $('#delete-all-progress').modal({ dismissible: false });
+            $('#error-modal').modal();
+        });
+
+        function formatBytes(a, b) { if (0 == a) return "0 Bytes"; var c = 1024, d = b || 2, e = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"], f = Math.floor(Math.log(a) / Math.log(c)); return parseFloat((a / Math.pow(c, f)).toFixed(d)) + " " + e[f] }
+
+        class SlackFile {
+            constructor(f) {
+                var self = this;
+                self.name = f.name;
+                self.timestamp = f.timestamp;
+                self.type = f.pretty_type;
+                self.size = f.size;
+                self.link = f.permalink;
+                self.id = f.id;
+
+                self.formattedTimestamp = ko.computed(function () {
+                    var date = new Date(self.timestamp * 1000);
+                    return date.toLocaleString("en-US");
+                });
+
+                self.formattedSize = ko.computed(function () {
+                    return formatBytes(self.size, 3);
+                });
+            }
+        };
+
+        class IndexViewModel {
+            constructor() {
+                var self = this;
+                this.files = ko.observableArray([]);
+                this.slackToken = ko.observable();
+                this.daysToDelete = ko.observable(30);
+                this.selectedFile = ko.observable();
+                this.totalFiles = ko.observable(0);
+                this.errorText = ko.observable("");
+                this.allFilesDeleted = ko.computed(function () {
+                    return self.files ? self.files().length == 0 : true;
+                });
+                this.remainingFiles = ko.computed(function () {
+                    return self.files ? self.totalFiles() - self.files().length : 0;
+                });
+                this.progress = ko.computed(function () {
+                    return `width: ${(self.remainingFiles() / self.totalFiles()) * 100}%`;
+                });
+
+                this.performSearch = () => {
+                    $.getJSON(`/api/SlackFileList/${this.slackToken()}/${this.daysToDelete()}`, (data) => {
+                        try {
+                            self.files(data.files.map((f) => new SlackFile(f)));
+                            self.totalFiles(self.files().length);
+                        } catch {
+                            self.errorText("Invalid response received from Slack. Please verify your token and try again.");
+                            $('#error-modal').modal('open');
+                        }
+                    });
+                };
+
+                this.deleteAll = () => {
+                    $('#delete-all-confirm-modal').modal('open');
+                };
+
+                this.deleteFile = (file) => {
+                    this.selectedFile(file);
+                    $('#delete-confirm-modal').modal('open');
+                };
+
+                this.confirmDelete = () => {
+                    self.actuallyDeleteFile(this.selectedFile());
+                };
+
+                this.actuallyDeleteFile = (file) => {
+                    $.post(`/api/SlackDeleter/${this.slackToken()}/${file.id}`).done((data) => {
+                        self.files.remove(file);
+                    });
+                }
+
+                this.confirmDeleteAll = () => {
+                    $('#delete-all-progress').modal('open');
+                    self.files().forEach((file, index) => {
+                        setTimeout(() => self.actuallyDeleteFile(file), 200 * (index + 1));
+                    });
+                };
+            }
+        };
+
+        var viewModel = new IndexViewModel();
+        ko.applyBindings(viewModel);
+
+    </script>
+
+}

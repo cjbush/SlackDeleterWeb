@@ -9,6 +9,7 @@
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         <link rel="stylesheet" href="~/lib/materialize/css/materialize.css" />
         <link rel="stylesheet" href="~/css/site.css" />
+        <link rel="stylesheet" href="https://cdn.materialdesignicons.com/2.8.94/css/materialdesignicons.min.css" />
     </environment>
     <environment exclude="Development">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -16,12 +17,13 @@
               asp-fallback-href="~/lib/materialize/css/materialize.min.css"
               asp-fallback-test-class="sr-only" asp-fallback-test-property="position" asp-fallback-test-value="absolute" />
         <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
+        <link rel="stylesheet" href="https://cdn.materialdesignicons.com/2.8.94/css/materialdesignicons.min.css" />
     </environment>
 </head>
 <body>
     <nav class="blue-grey">
         <div class="nav-wrapper container">
-            <a href="#" class="brand-logo">Slack Deleter</a>
+            <a href="#!" class="brand-logo">Slack Deleter<span class="mdi mdi-slack left" style="margin-top: 4px; margin-right: 2px;"></span></a>
             <ul id="nav-mobile" class="right hide-on-med-and-down">
                 <li><a asp-page="/Index">Home</a></li>
             </ul>
@@ -38,7 +40,8 @@
 
     <footer class="page-footer blue-grey">
         <div class="container">
-            <p>&copy; 2018 - Chris Bush (<a href="https://github.com/cjbush" class="white-text">https://github.com/cjbush</a>)</p>
+            <span class="left-align" style="float: left">&copy; 2018 - Chris Bush (<a href="https://github.com/cjbush" class="white-text">https://github.com/cjbush</a>)</span>
+            <span class="right-align" style="float: right">v @System.Diagnostics.FileVersionInfo.GetVersionInfo(@System.Reflection.Assembly.GetEntryAssembly().Location).ProductVersion</span>
         </div>
     </footer>
 
